@@ -1,0 +1,36 @@
+
+- name: set facts
+  set_fact:
+    postgresql_shared_buffers: 2000MB
+
+- name: install packages
+  apt: 
+    pkg: '{{ item }}'
+  with_items:
+    - postgresql-9.5-postgis-2.2
+    - python-psycopg2 # required for ansible postgresql_user
+
+- name: template tomcat8
+  template: 
+    src: postgresql.conf.j2
+    dest: /etc/postgresql/9.5/main/postgresql.conf
+    mode: 0644
+
+- name: create dhis2 database
+  become: yes
+  become_user: postgres
+  postgresql_db:
+    name: dhis2
+
+- name: create dhis2 database user
+  become: yes
+  become_user: postgres
+  postgresql_user:
+    db: dhis2
+    name: dhis2
+    password: dhis2
+
+- name: restart postgresql
+  service: 
+    name: postgresql
+    state: restarted

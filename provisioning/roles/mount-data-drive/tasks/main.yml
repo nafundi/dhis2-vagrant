@@ -1,0 +1,14 @@
+---
+
+- name: create filesystem
+  filesystem:
+    fstype: ext4
+    dev: /dev/sdc
+
+- name: mount drive
+  mount:
+    name: /var/lib/postgresql
+    src: /dev/sdc
+    fstype: ext4
+    boot: yes
+    state: mounted

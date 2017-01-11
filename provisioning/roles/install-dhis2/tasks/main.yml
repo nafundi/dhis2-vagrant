@@ -1,0 +1,79 @@
+- name: set facts
+  set_fact:
+    dhis2_home: /opt/dhis2
+
+- name: install packages
+  apt: 
+    pkg: unzip
+
+- name: create dhis2 home
+  file: 
+    path: '{{ item }}'
+    state: directory
+  with_items:
+    - '{{ dhis2_home }}'
+    - '{{ dhis2_home }}/config'
+    - '{{ dhis2_home }}/db'
+
+- name: template dhis.conf file
+  copy: 
+    src: dhis.conf
+    dest: '{{ dhis2_home }}/config/dhis.conf'
+    mode: 0600
+
+- name: synchronize dhis2-demo.zip to webapps
+  synchronize:
+    src: dhis2-demo.zip
+    dest: '{{ dhis2_home }}/db/dhis2-demo.zip'
+
+- name: check demo status
+  stat:
+    path: '{{ dhis2_home }}/db/.demo-installed'
+  register: demo
+
+- name: unzip demo data
+  command: 'unzip -o {{ dhis2_home }}/db/dhis2-demo.zip'
+  args:
+    chdir: /tmp/
+    warn: no # unzip is less memory intensive than ansible's unarchive
+  when: demo.stat.exists == False
+
+- name: install demo data
+  become: yes
+  become_user: postgres
+  command: psql -d dhis2 -f /tmp/demo.sql
+  when: demo.stat.exists == False
+
+- name: add .demo-installed
+  file:
+    path: '{{ dhis2_home }}/db/.demo-installed'
+    state: touch
+  when: demo.stat.exists == False
+
+- name: remove demo data tmp files
+  file:
+    path: /tmp/demo.sql
+    state: absent
+
+- name: create dhis2 home
+  file: 
+    path: '{{ dhis2_home }}'
+    state: directory
+    owner: tomcat8
+    group: tomcat8
+    recurse: yes 
+
+- name: clean tomcat root
+  file:
+    path: /var/lib/tomcat8/webapps/ROOT
+    state: absent
+
+- name: synchronize war to webapps
+  synchronize:
+    src: dhis2.war
+    dest: /var/lib/tomcat8/webapps/ROOT.war
+
+- name: restart tomcat
+  service: 
+    name: tomcat8
+    state: restarted

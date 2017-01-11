@@ -1,0 +1,28 @@
+---
+- name: set facts
+  set_fact:
+    catalina_opts: -Xmx1500m -Xms1000m
+    
+- name: install packages
+  apt: 
+    pkg: '{{ item }}'
+  with_items:
+    - default-jdk-headless
+    - tomcat8
+
+- name: copy server.xml
+  copy: 
+    src: server.xml
+    dest: /etc/tomcat8/server.xml
+    mode: 0644
+
+- name: template tomcat8
+  template: 
+    src: tomcat8.j2
+    dest: /etc/default/tomcat8
+    mode: 0644
+
+- name: restart tomcat
+  service: 
+    name: tomcat8
+    state: restarted

@@ -1,0 +1,16 @@
+---
+
+- hosts: all
+  gather_facts: no
+  
+  user: ubuntu
+  become: yes 
+  become_user: root
+  
+  roles:
+    - install-python-simplejson # required for ansible
+    - mount-data-drive
+    - install-postgresql-postgis
+    - install-tomcat
+    - install-dhis2
+    - get-ip-address

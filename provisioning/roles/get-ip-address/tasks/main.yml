@@ -1,0 +1,9 @@
+---
+
+- name: get ip
+  shell: hostname -I | cut -d' ' -f2
+  register: ip
+
+- name: print ip
+  debug: 
+    msg: 'Your server is live at http://{{ ip.stdout }}'
