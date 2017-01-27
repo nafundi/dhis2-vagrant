@@ -11,7 +11,7 @@
     - tomcat8
 
 - name: copy server.xml
-  copy: 
+  copy:
     src: server.xml
     dest: /etc/tomcat8/server.xml
     mode: 0644

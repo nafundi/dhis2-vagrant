@@ -1,0 +1,76 @@
+
+- name: install packages
+  apt: 
+    pkg: unzip
+
+- name: create dhis2-demo database
+  become: yes
+  become_user: postgres
+  postgresql_db:
+    owner: dhis2
+    name: dhis2-demo
+
+- name: create demo home
+  file: 
+    path: '{{ dhis2_home }}/demo'
+    owner: tomcat8
+    group: tomcat8
+    state: directory
+
+- name: check .installed
+  stat:
+    path: '{{ dhis2_home }}/demo/.installed'
+  register: installed
+
+- name: synchronize files
+  synchronize:
+    src: dhis2-demo.zip
+    dest: '{{ dhis2_home }}/demo/dhis2-demo.zip'
+
+- name: unzip demo data
+  command: 'unzip -o {{ dhis2_home }}/demo/dhis2-demo.zip'
+  args:
+    chdir: /tmp/
+    warn: no # unzip is less memory intensive than ansible's unarchive
+  when: installed.stat.exists == False
+
+- name: install demo data
+  become: yes
+  become_user: postgres
+  command: psql -d dhis2-demo -f /tmp/demo.sql
+  when: installed.stat.exists == False
+
+- name: remove demo data tmp files
+  file:
+    path: /tmp/demo.sql
+    state: absent
+
+- name: copy change-db-owner.sh
+  copy: 
+    src: change-db-owner.sh
+    dest: /tmp/change-db-owner.sh
+    mode: 0755
+
+- name: change db owner
+  become: yes
+  become_user: postgres
+  command: /tmp/change-db-owner.sh -d dhis2-demo -o dhis2
+
+- name: add .installed
+  file:
+    path: '{{ dhis2_home }}/demo/.installed'
+    state: touch
+  when: installed.stat.exists == False
+
+- name: template dhis.conf file
+  copy: 
+    src: dhis.conf
+    dest: '{{ dhis2_home }}/dhis.conf'
+    owner: tomcat8
+    group: tomcat8
+    mode: 0600
+
+- name: restart tomcat
+  service: 
+    name: tomcat8
+    state: restarted

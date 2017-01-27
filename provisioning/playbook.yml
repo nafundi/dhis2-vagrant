@@ -13,4 +13,5 @@
     - install-postgresql-postgis
     - install-tomcat
     - install-dhis2
+    - install-dhis2-demo
     - get-ip-address
